@@ -1,4 +1,4 @@
-# CPSC 312 
+# CPSC 312 Project 1
 
 Authors: Michelle, Owen, Floria
 
