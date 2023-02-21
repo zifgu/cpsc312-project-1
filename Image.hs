@@ -108,3 +108,14 @@ make_gaussian_filter sigma =
         normalizing_factor = sum [gaussian2d sigma x y | x <- [-r..r], y <- [-r..r]]
         f = \ x y -> (gaussian2d sigma x y) / normalizing_factor
     in (Filter r f)
+
+-- Building Gaussian Pyramid
+constructGaussian :: Image -> Double -> Int -> [Image]
+constructGaussian (Image width height im) sigma 0 = [convolve (Image width height im) (make_gaussian_filter sigma)]
+constructGaussian (Image width height im) sigma iterations = convolve (Image width height im) (make_gaussian_filter sigma) : constructGaussian (convolve (Image width height im) (make_gaussian_filter sigma)) sigma (iterations - 1)
+
+-- Building Laplacian Pyramid
+constructLaplacian :: [Image] -> [Image]
+constructLaplacian [c] = [c]
+constructLaplacian (a:b:c) = sub a b : constructLaplacian (b:c)
+  
