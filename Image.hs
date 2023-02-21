@@ -56,7 +56,7 @@ get (Image w h f) row col c
 -- bad = add im1 im3
 -- get bad 0 0 0                    -- error
 
--- Filter: radius (row -> col -> value)
+-- Filter: radius (x -> y -> value)
 -- Filter is centered at index (0, 0). Filter width and height are 2*radius + 1
 data Filter = Filter Int (Int -> Int -> Double)
 
@@ -91,3 +91,20 @@ convolve (Image w h im) (Filter r f) = Image w h im1
 -- get res3 0 0 1                               -- first column should be -0.5
 -- get res3 3 9 2                               -- last column should be -0.5
 -- get res3 1 2 0                               -- all others should be -1
+
+-- Evaluate the 2D Gaussian function with standard deviation sigma at x and y.
+gaussian2d :: Double -> Int -> Int -> Double
+gaussian2d sigma x y =
+    let
+        d = 2 * sigma^2
+        xx = fromIntegral x
+        yy = fromIntegral y
+    in (1 / (pi * d)) * exp (-((xx^2 + yy^2) / d))
+
+-- Returns a Gaussian filter with given sigma.
+make_gaussian_filter :: Double -> Filter
+make_gaussian_filter sigma =
+    let r = ceiling (3 * sigma)
+        normalizing_factor = sum [gaussian2d sigma x y | x <- [-r..r], y <- [-r..r]]
+        f = \ x y -> (gaussian2d sigma x y) / normalizing_factor
+    in (Filter r f)
