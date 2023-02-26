@@ -118,4 +118,62 @@ constructGaussian (Image width height im) sigma iterations = convolve (Image wid
 constructLaplacian :: [Image] -> [Image]
 constructLaplacian [c] = [c]
 constructLaplacian (a:b:c) = sub a b : constructLaplacian (b:c)
-  
+
+-- Composing Laplacian pyramid
+composeLaplacianPyramids :: [Image] -> [Image] -> [Image] -> [Image]
+composeLaplacianPyramids [] [] [] = []
+composeLaplacianPyramids (laph1:lapt1) (laph2:lapt2) (maskh:maskt) = add (mul laph1 maskh) (mul laph2 (oneMinus maskh)):composeLaplacianPyramids lapt1 lapt2 maskt
+
+-- Subtracts the Image from 1
+oneMinus :: Image -> Image
+oneMinus (Image h w im) = sub (Image h w (\ hi wi c -> 1.0)) (Image h w im)
+
+-- Reconstructs a gaussian pyramid from a laplacian pyramid and returns the head
+reconstructGausFromLap :: [Image] -> Image
+reconstructGausFromLap im = head (foldr reconstructHelper [] im)
+
+reconstructHelper :: Image -> [Image] -> [Image]
+reconstructHelper a [] = [a]
+reconstructHelper a (h:t) = add a h : (h:t)
+
+--Testing the Gaussian Pyramid
+testGf :: Int -> Int -> Int -> Double
+testGf w h c = fromIntegral w
+
+testG :: Image
+testG = Image 1 1 testGf
+
+instance Eq Image where
+    (Image h1 w1 x) == (Image h2 w2 y) = imhelp (Image h1 w1 x) == imhelp (Image h2 w2 y) && w1 == w2 && h1 == h2
+
+instance Show Image where
+    show x = foldr (\ y z -> show y ++ ", " ++ z) "" (imhelp x) 
+
+imhelp :: Image -> [Double]
+imhelp (Image w h im) = imhelphelp 0 w h (Image w h im)
+
+imhelphelp :: Int -> Int -> Int -> Image -> [Double]
+imhelphelp 2 0 0 (Image wi hi im) = [im 0 0 2]
+imhelphelp 2 0 h (Image wi hi im) = im 0 h 2:imhelphelp 0 wi (h-1) (Image wi hi im)
+imhelphelp 2 w h (Image wi hi im) = im w h 2:imhelphelp 0 (w-1) h (Image wi hi im)
+imhelphelp c w h (Image wi hi im) = im w h c:imhelphelp (c+1) w h (Image wi hi im)
+
+testFilter :: Filter
+testFilter = make_gaussian_filter 1.0
+
+testGpart1 :: Image
+testGpart1 = convolve testG testFilter
+testGpart2 :: Image
+testGpart2 = convolve testGpart1 testFilter
+testGpart3 :: Image
+testGpart3 = convolve testGpart2 testFilter
+testGFinal :: [Image]
+testGFinal = [testGpart1,testGpart2,testGpart3]
+
+testGComparison = constructGaussian testG 1.0 2
+testGResult = testGFinal == testGComparison
+
+-- Testing Laplacian pyramid
+testLaplacian = [sub testGpart1 testGpart2, sub testGpart2 testGpart3, testGpart3]
+testLaplacianComparison = constructLaplacian testGFinal
+testLaplacianResult = testLaplacian == testLaplacianComparison
