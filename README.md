@@ -6,9 +6,10 @@ Project page: https://wiki.ubc.ca/Course:CPSC312-2023-Image-Blending
 
 ## Running the project
 
+Install Stack: https://docs.haskellstack.org/en/stable/install_and_upgrade/
+
 ```
-cabal install --lib JuicyPixels
-cabal install --lib http-client
-cabal install --lib http-client-tls
-ghci -package JuicyPixels -package http-client -package http-client-tls
+stack ghci
+
+ghci> main
 ```

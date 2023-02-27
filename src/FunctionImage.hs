@@ -1,11 +1,10 @@
-module Image
+module FunctionImage
     (
         Image (..),
         add,
         sub,
         mul,
         get,
-        Filter (..),
         convolve,
         constructGaussian,
         constructLaplacian,
