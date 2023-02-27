@@ -1,3 +1,5 @@
+{-# LANGUAGE AllowAmbiguousTypes #-}
+
 module Image
     (
         Image (..),
@@ -13,6 +15,10 @@ module Image
 import Control.Exception
 
 -- TODO: parameterize image by type?
+
+import qualified Codec.Picture as JuicyPixels
+import qualified Codec.Picture.Types as Types
+import qualified Control.Monad.Primitive as Prim
 
 -- Image: width height (row -> col -> channel -> value)
 -- NOTE: width = # cols, height = # rows
@@ -177,3 +183,15 @@ testGResult = testGFinal == testGComparison
 testLaplacian = [sub testGpart1 testGpart2, sub testGpart2 testGpart3, testGpart3]
 testLaplacianComparison = constructLaplacian testGFinal
 testLaplacianResult = testLaplacian == testLaplacianComparison
+
+
+fromRGB8 v = round (v * 255)
+
+
+toDynIm (Image w h im) = Types.freezeImage (toDynImHelper w h (Image w h im) a) where
+    a = Types.createMutableImage w h (Types.PixelRGB8 0 0 0)
+
+toDynImHelper :: Int -> Int -> Image -> Types.MutableImage (Prim.PrimState m) Types.PixelRGB8 -> Types.MutableImage (Prim.PrimState m) Types.PixelRGB8
+toDynImHelper 0 0 (Image wi hi im) a = JuicyPixels.writePixel a 0 0 (JuicyPixels.PixelRGB8  (fromRGB8 (get (Image wi hi im) 0 0 0)) (fromRGB8 (get (Image wi hi im) 0 0 1)) (fromRGB8 (get (Image wi hi im) 0 0 2)))
+toDynImHelper 0 h (Image wi hi im) a = toDynImHelper 0 wi (h-1) (Image wi hi im) (JuicyPixels.writePixel a 0 h (JuicyPixels.PixelRGB8  (fromRGB8 (get (Image wi hi im) 0 h 0)) (fromRGB8 (get (Image wi hi im) 0 h 1)) (fromRGB8 (get (Image wi hi im) 0 h 2))))
+toDynImHelper w h (Image wi hi im) a = toDynImHelper 0 (w-1) h (Image wi hi im) (JuicyPixels.writePixel a w h (JuicyPixels.PixelRGB8  (fromRGB8 (get (Image wi hi im) w h 0)) (fromRGB8 (get (Image wi hi im) w h 1)) (fromRGB8 (get (Image wi hi im) w h 2))))
