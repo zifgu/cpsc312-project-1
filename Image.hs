@@ -1,3 +1,5 @@
+{-# LANGUAGE AllowAmbiguousTypes #-}
+
 module Image
     (
         Image (..),
@@ -13,6 +15,10 @@ module Image
 import Control.Exception
 
 -- TODO: parameterize image by type?
+
+import qualified Codec.Picture as JuicyPixels
+import qualified Codec.Picture.Types as Types
+import qualified Data.ByteString as Byte
 
 -- Image: width height (row -> col -> channel -> value)
 -- NOTE: width = # cols, height = # rows
@@ -177,3 +183,16 @@ testGResult = testGFinal == testGComparison
 testLaplacian = [sub testGpart1 testGpart2, sub testGpart2 testGpart3, testGpart3]
 testLaplacianComparison = constructLaplacian testGFinal
 testLaplacianResult = testLaplacian == testLaplacianComparison
+
+
+fromRGB8 v = round (v * 255)
+
+toDynIm :: Image -> Types.Image Types.PixelRGB8
+toDynIm (Image wi hi im)= Types.generateImage (\ w h -> JuicyPixels.PixelRGB8  (fromRGB8 (get (Image wi hi im) w h 0)) (fromRGB8 (get (Image wi hi im) w h 1)) (fromRGB8 (get (Image wi hi im) w h 2))) wi hi
+
+transcodeToPng :: Types.Image Types.PixelRGB8-> IO ()
+transcodeToPng image = do
+    putStrLn("Put path for new image name")
+    fileName <- getLine
+    file <- JuicyPixels.writePng fileName image
+    return ()
