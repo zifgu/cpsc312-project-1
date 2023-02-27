@@ -1,20 +1,5 @@
 import Image
-import ImageRead
-import Control.Exception
-
-testFromFile :: String -> IO ()
-testFromFile filepath = do
-    result <- readImageFromFile filepath
-    case result of
-        (Left str) -> testFromUrl filepath
-        (Right img) -> printImageStats img
-
-testFromUrl :: String -> IO ()
-testFromUrl url = do
-    result <- readImageFromUrl url
-    case result of
-        (Left str) -> putStrLn $ "Failed to fetch URL: " ++ str
-        (Right img) -> printImageStats img
+import ImageReadWrite
 
 printImageStats :: Image -> IO ()
 printImageStats image = do
@@ -26,33 +11,47 @@ printImageStats image = do
     putStrLn ("Pixel (60, 20): " ++ show (get image 60 20 0) ++ "," ++ show (get image 60 20 1) ++ "," ++ show (get image 60 20 2))
     putStrLn ("Pixel (100, 100): " ++ show (get image 100 100 0) ++ "," ++ show (get image 100 100 1) ++ "," ++ show (get image 100 100 2))
 
-
 -- Expected user flow: Input string per line for url/pathway which outputs an image.
 -- Users who wish to do this multiple times will need to type go again.
 
+getInputImages :: [String] -> IO (Maybe [Image])
+getInputImages prompts = getInputImagesHelper prompts []
+    where
+        getInputImagesHelper :: [String] -> [Image] -> IO (Maybe [Image])
+        getInputImagesHelper [] images = do
+            return $ Just images
+        getInputImagesHelper (prompt:t) images = do
+            putStrLn prompt
+            imageName <- getLine
+            result <- readImage imageName
+            case result of
+                (Left err) -> do
+                    putStrLn $ "Failed to read image: " ++ err
+                    return Nothing
+                (Right image) -> getInputImagesHelper t (images ++ [image])
 
-go :: IO (String, String, String, String) 
+go :: IO ()
 go = do
-    putStrLn ("Insert the 1st Image URL or filepath.")
-    firstName <- getLine
-    testFromFile firstName
-    putStrLn ("Insert the 2nd Image URL or filepath.")
-    secondName <- getLine
-    testFromFile secondName
-    putStrLn ("Insert the filter Image URL or filepath.")    
-    filterName <- getLine
-    testFromFile filterName
+    let prompts = ["Insert the 1st image URL or filepath.", "Insert the 2nd image URL or filepath.", "Insert the mask image URL or filepath."]
+    images <- getInputImages prompts
+    case images of
+        Nothing -> putStrLn "Sorry, please try again."
+        (Just [im1, im2, mask]) -> do
+            putStrLn "Successfully read images."
 
-    putStrLn ("Insert the name of the combined image.")
-    combinedImageName <- getLine
+            printImageStats im1
+            printImageStats im2
+            printImageStats mask
 
-    putStrLn ("Congratulations on merging your images! To see the result go to runtime-images folder.")
-    putStrLn(" ")
-    putStrLn ("   History:")
-    putStrLn ("       firstName = " ++ firstName)
-    putStrLn ("       secondName = " ++ secondName)     
-    putStrLn ("       filterName = " ++ filterName)      
-    putStrLn ("       combinedImageName = " ++ combinedImageName)
-    putStrLn(" ")
-    return (firstName, secondName, filterName, combinedImageName)
-      
+            putStrLn ("Insert the name of the combined image.")
+            combinedImageName <- getLine
+            let combinedImagePath = combinedImageName ++ ".png"
+
+            let combinedImage = imageBlend im1 im2 mask 1.0 0
+
+            printImageStats combinedImage
+            putStrLn "Done blending! Saving result..."
+
+            writeToPng combinedImage combinedImagePath
+
+            putStrLn ("Congratulations on merging your images! To see the result go to runtime-images folder.")

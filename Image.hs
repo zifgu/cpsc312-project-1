@@ -1,5 +1,3 @@
-{-# LANGUAGE AllowAmbiguousTypes #-}
-
 module Image
     (
         Image (..),
@@ -9,16 +7,15 @@ module Image
         get,
         Filter (..),
         convolve,
+        constructGaussian,
+        constructLaplacian,
+        composeLaplacianPyramids,
+        reconstructFromLap,
+        imageBlend,
     )
     where
 
 import Control.Exception
-
--- TODO: parameterize image by type?
-
-import qualified Codec.Picture as JuicyPixels
-import qualified Codec.Picture.Types as Types
-import qualified Data.ByteString as Byte
 
 -- Image: width height (row -> col -> channel -> value)
 -- NOTE: width = # cols, height = # rows
@@ -117,8 +114,12 @@ make_gaussian_filter sigma =
 
 -- Building Gaussian Pyramid
 constructGaussian :: Image -> Double -> Int -> [Image]
-constructGaussian (Image width height im) sigma 0 = [convolve (Image width height im) (make_gaussian_filter sigma)]
-constructGaussian (Image width height im) sigma iterations = convolve (Image width height im) (make_gaussian_filter sigma) : constructGaussian (convolve (Image width height im) (make_gaussian_filter sigma)) sigma (iterations - 1)
+constructGaussian im sigma iterations =  constructGaussianHelp im (make_gaussian_filter sigma) iterations
+
+constructGaussianHelp :: Image -> Filter -> Int -> [Image]
+constructGaussianHelp (Image width height im) sigmafilter 0 = [convolve (Image width height im) sigmafilter]
+constructGaussianHelp (Image width height im) sigmafilter iterations = con : constructGaussianHelp con sigmafilter (iterations - 1) where
+    con = convolve (Image width height im) sigmafilter
 
 -- Building Laplacian Pyramid
 constructLaplacian :: [Image] -> [Image]
@@ -132,15 +133,26 @@ composeLaplacianPyramids (laph1:lapt1) (laph2:lapt2) (maskh:maskt) = add (mul la
 
 -- Subtracts the Image from 1
 oneMinus :: Image -> Image
-oneMinus (Image h w im) = sub (Image h w (\ hi wi c -> 1.0)) (Image h w im)
+oneMinus (Image w h im) = sub (Image w h (\ row col c -> 1.0)) (Image w h im)
 
--- Reconstructs a gaussian pyramid from a laplacian pyramid and returns the head
-reconstructGausFromLap :: [Image] -> Image
-reconstructGausFromLap im = head (foldr reconstructHelper [] im)
+-- Create an image with all zeroes of the same size as the input image
+zeroImage :: Image -> Image
+zeroImage (Image w h _) = Image w h (\ row col c -> 0.0)
 
-reconstructHelper :: Image -> [Image] -> [Image]
-reconstructHelper a [] = [a]
-reconstructHelper a (h:t) = add a h : (h:t)
+-- Reconstructs an image from a laplacian pyramid
+reconstructFromLap :: [Image] -> Image
+reconstructFromLap (h:t) = foldr add (zeroImage h) (h:t)
+
+-- Blends two images
+imageBlend :: Image -> Image -> Image -> Double -> Int -> Image
+imageBlend im1 im2 mask sigma iterations =
+    let
+        pyr1 = constructLaplacian (constructGaussian im1 sigma iterations)
+        pyr2 = constructLaplacian (constructGaussian im2 sigma iterations)
+        pyrMask = constructGaussian mask sigma iterations
+        pyrOut = composeLaplacianPyramids pyr1 pyr2 pyrMask
+        result = reconstructFromLap pyrOut
+    in result
 
 --Testing the Gaussian Pyramid
 testGf :: Int -> Int -> Int -> Double
@@ -183,16 +195,3 @@ testGResult = testGFinal == testGComparison
 testLaplacian = [sub testGpart1 testGpart2, sub testGpart2 testGpart3, testGpart3]
 testLaplacianComparison = constructLaplacian testGFinal
 testLaplacianResult = testLaplacian == testLaplacianComparison
-
-
-fromRGB8 v = round (v * 255)
-
-toDynIm :: Image -> Types.Image Types.PixelRGB8
-toDynIm (Image wi hi im)= Types.generateImage (\ w h -> JuicyPixels.PixelRGB8  (fromRGB8 (get (Image wi hi im) w h 0)) (fromRGB8 (get (Image wi hi im) w h 1)) (fromRGB8 (get (Image wi hi im) w h 2))) wi hi
-
-transcodeToPng :: Types.Image Types.PixelRGB8-> IO ()
-transcodeToPng image = do
-    putStrLn("Put path for new image name")
-    fileName <- getLine
-    file <- JuicyPixels.writePng fileName image
-    return ()
