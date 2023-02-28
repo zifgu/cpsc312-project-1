@@ -21,7 +21,10 @@ description:         Please see the README on GitHub at <https://github.com/gith
 
 dependencies:
 - base >= 4.7 && < 5
-- hip >= 1.5.6.0
+- hip
+- JuicyPixels
+- bytestring
+- directory
 - http-client
 - http-client-tls
 

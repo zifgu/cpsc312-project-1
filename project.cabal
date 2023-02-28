@@ -25,16 +25,19 @@ source-repository head
 
 library
   exposed-modules:
-      FunctionImage
       Image
+      ImageReadWrite
   other-modules:
       Paths_project
   hs-source-dirs:
       src
   ghc-options: -Wall -Wcompat -Widentities -Wincomplete-record-updates -Wincomplete-uni-patterns -Wmissing-export-lists -Wmissing-home-modules -Wpartial-fields -Wredundant-constraints
   build-depends:
-      base >=4.7 && <5
-    , hip >=1.5.6.0
+      JuicyPixels
+    , base >=4.7 && <5
+    , bytestring
+    , directory
+    , hip
     , http-client
     , http-client-tls
   default-language: Haskell2010
@@ -47,8 +50,11 @@ executable project-exe
       app
   ghc-options: -Wall -Wcompat -Widentities -Wincomplete-record-updates -Wincomplete-uni-patterns -Wmissing-export-lists -Wmissing-home-modules -Wpartial-fields -Wredundant-constraints -threaded -rtsopts -with-rtsopts=-N
   build-depends:
-      base >=4.7 && <5
-    , hip >=1.5.6.0
+      JuicyPixels
+    , base >=4.7 && <5
+    , bytestring
+    , directory
+    , hip
     , http-client
     , http-client-tls
     , project
@@ -63,8 +69,11 @@ test-suite project-test
       test
   ghc-options: -Wall -Wcompat -Widentities -Wincomplete-record-updates -Wincomplete-uni-patterns -Wmissing-export-lists -Wmissing-home-modules -Wpartial-fields -Wredundant-constraints -threaded -rtsopts -with-rtsopts=-N
   build-depends:
-      base >=4.7 && <5
-    , hip >=1.5.6.0
+      JuicyPixels
+    , base >=4.7 && <5
+    , bytestring
+    , directory
+    , hip
     , http-client
     , http-client-tls
     , project
