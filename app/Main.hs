@@ -66,7 +66,7 @@ combineImages im1Str im2Str maskStr sigma iterations = do
             if checkSameSize ims
             then do 
                 let combinedImage = imageBlend im1 im2 mask sigma iterations
-                putStrLn "Now blending! Please wait for the result (may take several minutes or more)..."
+                putStrLn "Now blending! Please wait for the result (may take several minutes)..."
                 HIP.displayImage combinedImage
             else
                 putStrLn "Error: images must be the same size. Please try again."
