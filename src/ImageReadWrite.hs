@@ -20,11 +20,11 @@ import Control.Exception
 -- ****************************************************************
 
 -- readImageFromFile filepath   tries to read the image at filepath
--- May raise an exception - for example, if the file does not exist.
-readImageFromFile :: String -> IO RGBImage
+-- May return the error string if the file does not exist, file is not an image, etc.
+readImageFromFile :: String -> IO (Either String RGBImage)
 readImageFromFile filepath = do 
-    img <- HIP.readImageRGB HIP.VS filepath
-    return img
+    bytes <- Lazy.readFile filepath
+    return $ convertImage bytes
 
 -- readImageFromUrl url         tries to fetch the image at url; returns either an error string or the image
 --      url - an HTTP or HTTPS URL that points to an image resource
