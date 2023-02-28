@@ -8,8 +8,12 @@ Project page: https://wiki.ubc.ca/Course:CPSC312-2023-Image-Blending
 
 Install Stack: https://docs.haskellstack.org/en/stable/install_and_upgrade/
 
+In Terminal:
 ```
 stack ghci
+```
 
-ghci> main
+In ghci:
+```
+combineImages "images/orchid.jpg" "images/violet.jpg" "images/orchid_mask.bmp" 2.0 3
 ```
